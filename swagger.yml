@@ -114,6 +114,8 @@ paths:
                   type: "string"
                 location:
                   type: "object"
+      security:
+        - oauth2: [ 'uid' ]
   /geos/{loc_id}:
     get:
       x-swagger-router-controller: run
@@ -220,6 +222,8 @@ paths:
                   type: "string"
                 location:
                   type: "object"
+      security:
+        - oauth2: [ 'uid' ]
     delete:
       x-swagger-router-controller: run
       operationId: safe_delete
@@ -347,6 +351,8 @@ paths:
                   type: "string"
                 city:
                   type: "string"
+      security:
+        - oauth2: [ 'uid' ]
   /deleted/{loc_id}:
     delete:
       x-swagger-router-controller: run
@@ -365,6 +371,8 @@ paths:
       responses:
         200:
           description: "Data removed permanently"
+      security:
+        - oauth2: [ 'uid' ]
     put:
       x-swagger-router-controller: run
       operationId: restore_deleted
@@ -381,3 +389,65 @@ paths:
       responses:
         200:
           description: "Data restored"
+      security:
+        - oauth2: ['uid']
+  /secret:
+    get:
+      summary: Return secret string
+      operationId: settings.get_secret
+      responses:
+        200:
+          description: secret response
+          schema:
+            type: string
+      security:
+        # enable authentication and require the "uid" scope for this endpoint
+        - oauth2: [ 'uid' ]
+  /login:
+    post:
+      operationId: run.login
+      tags:
+        - "Login"
+      summary: "POST data for authentication."
+      description: "Authentication"
+      parameters:
+        - name: user
+          in: body
+          description: user instance
+          required: True
+          schema:
+            type: object
+            properties:
+              login:
+                type: string
+              password:
+                type: string
+      responses:
+        200:
+          description: "User authenticated"
+  /tokeninfo:
+    get:
+      summary: OAuth2 token info
+      operationId: settings.get_tokeninfo
+      responses:
+        200:
+          description: Token info object
+          schema:
+            type: object
+            properties:
+              uid:
+                type: string
+              scope:
+                type: array
+              items:
+                type: string
+securityDefinitions:
+  oauth2:
+    type: oauth2
+    flow: implicit
+    authorizationUrl: https://example.com/oauth2/dialog
+    # the token info URL is hardcoded for our mock_tokeninfo.py script
+    # you can also pass it as an environment variable TOKENINFO_URL
+    x-tokenInfoUrl: http://localhost:5000/tokeninfo
+    scopes:
+      uid: Unique identifier of the user accessing the service.

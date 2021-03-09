@@ -5,9 +5,9 @@ from sqlalchemy import Table, Column, Integer, Text, JSON, String, \
 from sqlalchemy.orm import relationship
 from sqlalchemy.ext.declarative import declarative_base
 import ipaddress
-
+from cryptography.fernet import Fernet
 # Base = declarative_base()
-
+import base64 as b64
 # engine = create_engine("sqlite+pysqlite:///:memory:", echo=True)
 # db = SQLAlchemy(app)
 # db.app = app
@@ -70,6 +70,37 @@ class GeolocationSchema(mm.SQLAlchemyAutoSchema):
         alchemy_session = db.session
         load_instance = True
         exclude = ['visible']
+
+
+class User(db.Model):
+    __tablename__ = 'user'
+    id = Column(Integer, primary_key=True, autoincrement=True, nullable=False)
+    login = Column(String, nullable=False)
+    password = Column(String, nullable=False)
+    user_identifier = Column(db.LargeBinary, nullable=False)
+
+    # user_key = b'2tpdHLuGaGC4oYu-f3rNcWyF6JjB8Z87huE1_DfmvbA='
+
+    def __init__(self, login, password, identifier=Fernet.generate_key()):
+        self.login = login
+        self.user_identifier = identifier
+        fernet_cipher = Fernet(identifier)
+        cipher_encrypt = fernet_cipher.encrypt(bytes(password, 'utf-8'))
+        self.password = cipher_encrypt
+
+        deciphered = fernet_cipher.decrypt(ciphered)
+        to_text = bytes(deciphered).decode("utf-8")
+
+
+class UserSchema(mm.SQLAlchemyAutoSchema):
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+
+    class Meta:
+        model = User
+        alchemy_session = db.session
+        load_instance = True
+        exclude = ['password']
 
 
 def ip_validator(_ip):

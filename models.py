@@ -1,6 +1,7 @@
-from settings import app
+from settings import db, mm, app, conned_app
 from flask_sqlalchemy import SQLAlchemy
-from sqlalchemy import Table, Column, Integer, ForeignKey, String, create_engine
+from sqlalchemy import Table, Column, Integer, Text, JSON, String, \
+    create_engine
 from sqlalchemy.orm import relationship
 from sqlalchemy.ext.declarative import declarative_base
 import ipaddress
@@ -8,28 +9,15 @@ import ipaddress
 # Base = declarative_base()
 
 # engine = create_engine("sqlite+pysqlite:///:memory:", echo=True)
-db = SQLAlchemy(app)
-db.app = app
+# db = SQLAlchemy(app)
+# db.app = app
 
 
 class Geolocation(db.Model):
-    __tablename__ = 'geolocation'
-    id = Column(Integer, primary_key=True)
-    localization_input = Column(String, nullable=False)
-    # localization_details = db.Column(db.ForeignKey)
-    # locations_data = relationship("LocationData", back_populates="geolocation")
-
-    # def serialize(self):
-    #     return {"id": self.id,
-    #             "input":self.localization_input,
-    #             "data": self.locations_data}
-
-
-class LocationData(db.Model):
-    __tablename__= 'locationdata'
-    id = Column(Integer, primary_key=True)
-    # input_data  = Column(Integer, ForeignKey('geolocation.localization_input'))
-    # geolocation = relationship("Geolocation", back_populates="locations_data")
+    __tablename__= 'geolocation'
+    id = Column(Integer, primary_key=True, autoincrement=True,
+                nullable=True)
+    input_data = Column(Text, nullable=True)
     ip = Column(String, nullable=True)
     type = Column(String, nullable=True)
     continent_code = Column(String, nullable=True)
@@ -40,16 +28,18 @@ class LocationData(db.Model):
     city = Column(String, nullable=True)
     latitude = Column(String, nullable=True)
     longitude = Column(String, nullable=True)
+    location = Column(JSON, nullable=True)
+    visible = Column(Integer, nullable=False, default=1)
 
-    def __init__(self, dictionary):
+    def __init__(self, dictionary, user_input='check'):
+        setattr(self, "input_data", user_input)
         for k, v in dictionary.items():
             setattr(self, k, v)
 
     def serialize(self):
         return {
             "id": self.id,
-            # "input": self.input_data,
-            # "geo": self.geolocation,
+            # "user_input": self.input_data,
             "ip_address": self.ip,
             "ip_type": self.type,
             # "continent": self.continent_code,
@@ -62,8 +52,24 @@ class LocationData(db.Model):
             "longitude": self.longitude,
             }
 
-    def output(self):
-        return self.__dict__
+    def short(self):
+        return {
+            "id": self.id,
+            "ip_address": self.ip,
+            "county_code": self.country_code,
+            "city": self.city,
+            }
+
+
+class GeolocationSchema(mm.SQLAlchemyAutoSchema):
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+
+    class Meta:
+        model = Geolocation
+        alchemy_session = db.session
+        load_instance = True
+        exclude = ['visible']
 
 
 def ip_validator(_ip):
@@ -107,6 +113,8 @@ second_set = [
     "155.22.16.173",
     "32.1.213.113",
     ]
+
+third_set = []
 
 
 def init_db():

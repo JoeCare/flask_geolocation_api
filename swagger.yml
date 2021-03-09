@@ -1,0 +1,383 @@
+swagger: "2.0"
+info:
+  description: This is the swagger file that goes with our server code
+  version: "1.0.0"
+  title: Swagger REST Article
+consumes:
+  - "application/json"
+produces:
+  - "application/json"
+
+basePath: "/"
+
+# Paths supported by the server application
+paths:
+  /geos/:
+    get:
+      x-swagger-router-controller: run
+      operationId: retrieve_all
+      tags:
+        - "Geolocalization"
+      summary: "Geolocation all records"
+      description: "Listing of stored geolocalization data"
+      responses:
+        200:
+          description: "Successful list operation"
+          schema:
+            type: "array"
+            items:
+              properties:
+                id:
+                  type: integer
+                  description: Unique identificatior of single data record
+                input_data:
+                  type: "string"
+                  description: "User input given for geolocalization"
+                ip:
+                  type: "string"
+                  description: Collected IP address
+                type:
+                  type: "string"
+                  description: Collected IP addres type (IPv4/IPv6)
+                county_code:
+                  type: "string"
+                  description: Collected IP addres type (IPv4/IPv6)
+                country_name:
+                  type: "string"
+                region_name:
+                  type: "string"
+                city:
+                  type: "string"
+                latitude:
+                  type: "string"
+                longitude:
+                  type: "string"
+                location:
+                  type: "object"
+    post:
+      x-swagger-router-controller: run
+      operationId: create
+      tags:
+        - "Geolocalization"
+      summary: "Create record"
+      description: "Add new geolocation"
+      parameters:
+        - name: geolocation
+          in: body
+          description: Geolocation to create
+          required: True
+          schema:
+            type: object
+            properties:
+              ip:
+                type: "string"
+              type:
+                type: "string"
+              county_code:
+                type: "string"
+              country_name:
+                type: "string"
+              region_name:
+                type: "string"
+              city:
+                type: "string"
+              latitude:
+                type: "string"
+              longitude:
+                type: "string"
+              location:
+                type: object
+      responses:
+        200:
+          description: "Successful create operation"
+          schema:
+            type: "object"
+            items:
+              properties:
+                id:
+                  type: number
+                ip:
+                  type: "string"
+                type:
+                  type: "string"
+                county_code:
+                  type: "string"
+                country_name:
+                  type: "string"
+                region_name:
+                  type: "string"
+                city:
+                  type: "string"
+                latitude:
+                  type: "string"
+                longitude:
+                  type: "string"
+                location:
+                  type: "object"
+  /geos/{loc_id}:
+    get:
+      x-swagger-router-controller: run
+      operationId: retrieve_one
+      tags:
+        - "Geolocalization"
+      summary: "Geolocalization single record"
+      description: "Localization data of desired record"
+      parameters:
+        - name: loc_id
+          in: path
+          description: ID of the record
+          required: True
+          type: integer
+      responses:
+        200:
+          description: "Successful retrieve operation"
+          schema:
+            type: "object"
+            items:
+              properties:
+                input_data:
+                  type: "string"
+                ip:
+                  type: "string"
+                type:
+                  type: "string"
+                county_code:
+                  type: "string"
+                country_name:
+                  type: "string"
+                region_name:
+                  type: "string"
+                city:
+                  type: "string"
+                latitude:
+                  type: "string"
+                longitude:
+                  type: "string"
+                location:
+                  type: "object"
+    put:
+      x-swagger-router-controller: run
+      operationId: update_one
+      tags:
+        - "Geolocalization"
+      summary: "Update record"
+      description: "Update geolocalization data for passed ID"
+      parameters:
+        - name: loc_id
+          in: path
+          description: ID of the record
+          required: True
+          type: integer
+        - name: geolocation
+          in: body
+          description: object data to update from
+          required: True
+          schema:
+            type: object
+            properties:
+              ip:
+                type: "string"
+              type:
+                type: "string"
+              county_code:
+                type: "string"
+              country_name:
+                type: "string"
+              region_name:
+                type: "string"
+              city:
+                type: "string"
+              latitude:
+                type: "string"
+              longitude:
+                type: "string"
+              location:
+                type: "object"
+      responses:
+        200:
+          description: "Successful update operation"
+          schema:
+            type: "object"
+            items:
+              properties:
+                input_data:
+                  type: "string"
+                ip:
+                  type: "string"
+                type:
+                  type: "string"
+                county_code:
+                  type: "string"
+                country_name:
+                  type: "string"
+                region_name:
+                  type: "string"
+                city:
+                  type: "string"
+                latitude:
+                  type: "string"
+                longitude:
+                  type: "string"
+                location:
+                  type: "object"
+    delete:
+      x-swagger-router-controller: run
+      operationId: safe_delete
+      tags:
+        - "Geolocalization"
+      summary: "Delete record"
+      description: "Delete geolocalization data for passed ID"
+      parameters:
+        - name: loc_id
+          in: path
+          description: ID of the record
+          required: True
+          type: integer
+      responses:
+        200:
+          description: "Successful delete operation"
+  /geos/input_ip={input_ip}:
+    post:
+      x-swagger-router-controller: run
+      operationId: create_with_ip
+      tags:
+        - "Geolocalization"
+      summary: "Add geolocation data collected for given IP"
+      description: "Proper format: /geos/input_ip=0.0.0.0"
+      parameters:
+        - name: input_ip
+          in: path
+          description: IP address to send for geolocation
+          required: True
+          type: string
+      responses:
+        200:
+          description: "Successful create operation"
+          schema:
+            type: "object"
+            items:
+              properties:
+                id:
+                  type: number
+                input_data:
+                  type: "string"
+                ip:
+                  type: "string"
+                type:
+                  type: "string"
+                county_code:
+                  type: "string"
+                country_name:
+                  type: "string"
+                region_name:
+                  type: "string"
+                city:
+                  type: "string"
+                latitude:
+                  type: "string"
+                longitude:
+                  type: "string"
+                location:
+                  type: "object"
+  /geos/input_domain={input_domain}:
+    post:
+      x-swagger-router-controller: run
+      operationId: create_with_domain
+      tags:
+        - "Geolocalization"
+      summary: "Add geolocation data obtained from domain address"
+      description: "Proper format: /geos/input_domain=www.google.com"
+      parameters:
+        - name: input_domain
+          in: path
+          description: Domain address to send for geolocation
+          required: True
+          type: string
+      responses:
+        200:
+          description: "Successful create operation"
+          schema:
+            type: "object"
+            items:
+              properties:
+                id:
+                  type: number
+                input_data:
+                  type: "string"
+                ip:
+                  type: "string"
+                type:
+                  type: "string"
+                county_code:
+                  type: "string"
+                country_name:
+                  type: "string"
+                region_name:
+                  type: "string"
+                city:
+                  type: "string"
+                latitude:
+                  type: "string"
+                longitude:
+                  type: "string"
+                location:
+                  type: "object"
+  /deleted/:
+    get:
+      x-swagger-router-controller: run
+      operationId: list_deleted
+      tags:
+        - "Geolocalization"
+      summary: "Data removed from main collection"
+      description: "Records may be permanently removed or restored"
+      responses:
+        200:
+          description: "Safe-deleted records listing"
+          schema:
+            type: "array"
+            items:
+              properties:
+                id:
+                  type: number
+                ip:
+                  type: "string"
+                type:
+                  type: "string"
+                country_name:
+                  type: "string"
+                city:
+                  type: "string"
+  /deleted/{loc_id}:
+    delete:
+      x-swagger-router-controller: run
+      operationId: remove_deleted
+      tags:
+        - "Geolocalization"
+      summary: "DELETE: Delete permanently."
+      description: "Send DELETE request with record ID for permanent
+      removal from database."
+      parameters:
+        - name: loc_id
+          in: path
+          description: ID of the record
+          required: True
+          type: integer
+      responses:
+        200:
+          description: "Data removed permanently"
+    put:
+      x-swagger-router-controller: run
+      operationId: restore_deleted
+      tags:
+        - "Geolocalization"
+      summary: "PUT: Put back to main API."
+      description: "Send PUT request with record ID to restore for main API."
+      parameters:
+        - name: loc_id
+          in: path
+          description: ID of the record
+          required: True
+          type: integer
+      responses:
+        200:
+          description: "Data restored"

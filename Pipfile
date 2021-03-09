@@ -16,6 +16,11 @@ psycopg2 = "*"
 psycopg2-binary = "*"
 gunicorn = "*"
 requests = "*"
+connexion = {extras = ["swagger-ui"], version = "*"}
+flask-marshmallow = "*"
+marshmallow-sqlalchemy = "*"
+marshmallow = "*"
+swagger-ui-bundle = "*"
 
 [dev-packages]
 

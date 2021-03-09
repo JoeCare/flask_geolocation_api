@@ -1,6 +1,4 @@
-# Project12: FlApi [![Generic badge](https://img.shields.io/badge/Learn-Python.Flask-blue.svg)](https://www.pluralsight.com/courses/python-flask-rest-api)
+# Geolocalization API 
+![Generic badge](https://img.shields.io/badge/Flask_API-success.svg) ![Generic badge](https://img.shields.io/static/v1?label=powered_by&message=Python&color=orange?style=for-the-badge&logo=python&logoColor=cyan)
 
-excercise provided by Pluralsight:
-"Building a REST API Using Python and Flask"
-by Sanjay Rai.
-Best Regards!
+"Geolocalization with Python and Flask"

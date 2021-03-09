@@ -1,7 +1,12 @@
 from flask import Flask
-import os
+import os, connexion
+from flask_sqlalchemy import SQLAlchemy
+from flask_marshmallow import Marshmallow
 
-app = Flask(__name__)
+BASE_DIR = os.path.abspath(os.path.dirname(__file__))
+
+conned_app = connexion.App(__name__, specification_dir=BASE_DIR)
+app = conned_app.app
 # app = Flask('flask_geolocation_api')
 # app = Flask(__name__.split('.')[0])
 
@@ -9,9 +14,8 @@ ENV = 'development'
 if ENV == 'development':
     app.config['ENV'] = 'development'
     app.debug = True
-    BASE_DIR = os.path.abspath(os.path.dirname(__file__))
     app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///' + os.path.join(
-        BASE_DIR, 'database.db')
+        BASE_DIR, 'geo.db')
     # app.config['SQLALCHEMY_DATABASE_URI'] = \
     #     'postgresql://postgres:flapi@localhost'
 else:
@@ -22,3 +26,7 @@ app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['CSRF_ENABLED'] = True
 app.config['CSRF_SESSION_KEY'] = "flapi"
 app.config['SECRET_KEY'] = "flapi"
+
+db = SQLAlchemy(app)
+
+mm = Marshmallow(app)

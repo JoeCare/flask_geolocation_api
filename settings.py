@@ -1,8 +1,8 @@
-from flask import Flask, request
 import os, connexion
 from dotenv import load_dotenv, find_dotenv
 from flask_sqlalchemy import SQLAlchemy
 from flask_marshmallow import Marshmallow
+
 load_dotenv(find_dotenv())
 BASE_DIR = os.path.abspath(os.path.dirname(__file__))
 
@@ -25,7 +25,7 @@ else:
 
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['CSRF_ENABLED'] = True
-app.config['CSRF_SESSION_KEY'] = "flapi"
+app.config['CSRF_SESSION_KEY'] = os.getenv('CSRF_SESSION_KEY')
 app.config['SECRET_KEY'] = os.getenv('SECRET_KEY')
 
 db = SQLAlchemy(app)

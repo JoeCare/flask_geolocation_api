@@ -1,5 +1,5 @@
 from settings import db, mm, app, conned_app, os, load_dotenv, find_dotenv
-from sqlalchemy import Table, Column, Integer, Text, JSON, String
+from sqlalchemy import Column, Integer, Text, JSON, String
 from werkzeug.security import generate_password_hash as gpass
 from werkzeug.security import check_password_hash as chpass
 import ipaddress, uuid

@@ -300,55 +300,7 @@ paths:
       security:
       - JWTokenAuth: ['secret']
       x-swagger-router-controller: run
-  /auth/login:
-    post:
-      tags:
-      - User
-      summary: POST data for authentication.
-      description: Authentication
-      operationId: run.log_in
-      requestBody:
-        description: user instance
-        content:
-          application/json:
-            schema:
-              type: object
-              properties:
-                login:
-                  type: string
-                password:
-                  type: string
-        required: true
-      responses:
-        200:
-          description: User authenticated
-          content: {}
-        401:
-          description: Wrong credentials
-          content: {}
-      x-codegen-request-body-name: user
-  /auth/{user_id}:
-    get:
-      tags:
-        - JWT
-      summary: JWT shortcut
-      operationId: run.generate_token
-      parameters:
-      - name: user_id
-        description: User unique identifier
-        in: path
-        required: true
-        example: 12
-        schema:
-          type: integer
-      responses:
-        '200':
-          description: JWT token
-          content:
-            'text/plain':
-              schema:
-                type: string
-  /auth/users:
+  /users:
      get:
        tags:
          - User
@@ -369,29 +321,17 @@ paths:
                        type: number
                      login:
                        type: string
-  /auth:
-     get:
-       tags:
-         - User
-       summary: Retrieve token from cookie
-       description: Refresh
-       operationId: run.cookie_token
-       responses:
-        '200':
-          description: JWT cookie
-          content:
-            'application/json':
-              schema:
-                type: string
-  /auth/register:
+       security:
+       - JWTokenAuth: ['secret']
+  /users/register:
     post:
       tags:
         - User
-      summary: Create new user
-      description: Get authorized
+      summary: Register new user
+      description: Create new user from given request body
       operationId: run.register
       requestBody:
-        description: New user instance
+        description: Object filled with data to create new user
         content:
           application/json:
             schema:
@@ -416,6 +356,67 @@ paths:
           description: Wrong credentials
           content: { }
       x-codegen-request-body-name: user
+  /auth/login:
+    post:
+      tags:
+        - Auth
+      summary: POST data for authentication.
+      description: Authentication through login
+      operationId: run.log_in
+      requestBody:
+        description: Required credentials
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                login:
+                  type: string
+                password:
+                  type: string
+        required: true
+      responses:
+        200:
+          description: User authenticated
+          content: { }
+        401:
+          description: Wrong credentials
+          content: { }
+      x-codegen-request-body-name: user
+  /auth/cookies:
+     get:
+       tags:
+         - Auth
+       summary: Retrieve token from cookie
+       description: Refresh
+       operationId: run.cookie_token
+       responses:
+        '200':
+          description: JWT cookie
+          content:
+            'application/json':
+              schema:
+                type: string
+  /auth/{public_id}:
+    get:
+      tags:
+        - Auth
+      summary: JWT shortcut
+      operationId: run.generate_token
+      parameters:
+        - name: public_id
+          description: User unique identifier
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: JWT token
+          content:
+            'application/json':
+              schema:
+                type: string
 components:
   securitySchemes:
     JWTokenAuth:

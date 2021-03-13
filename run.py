@@ -1,15 +1,12 @@
-from models import (db, app, conned_app, ip_validator, Geolocation,
-					GeolocationSchema, User, UserSchema, init_db, third_set,
-					gpass, chpass, load_dotenv, find_dotenv)
-from flask import json, request, jsonify, sessions, Response, make_response
-import requests, os
+from models import (
+	db, app, conned_app, ip_validator, Geolocation, GeolocationSchema,
+	User, UserSchema, init_db, third_set, fourth_set, gpass, chpass,
+	load_dotenv, find_dotenv)
+from flask import json, request, jsonify, make_response
+import requests, os, time, six
 from connexion.resolver import RestyResolver
-#==========
-import time, six
 from werkzeug.exceptions import Unauthorized
-from jose import JWTError, ExpiredSignatureError, jwt
-# from flask_jwt_extended.utils import (set_access_cookies,
-# create_access_token, decode_token)
+from jose import JWTError, jwt
 
 load_dotenv(find_dotenv())
 
@@ -229,13 +226,18 @@ def _current_timestamp() -> int:
 	return int(time.time())
 
 
-def generate_token(user_id):
+def generate_token(public_id):
+	"""
+	Simple token generator taking returning encoded JWT
+	:param public_id:	unique string user identification
+	:return 	JWT:	authorization token for given public_id
+	"""
 	timestamp = _current_timestamp()
 	payload = {
 		"iss": JWT_ISSUER,
 		"iat": int(timestamp),
 		"exp": int(timestamp + JWT_LIFETIME_SECONDS),
-		"sub": str(user_id),
+		"sub": str(public_id),
 		}
 	return jwt.encode(payload, JWT_SECRET, algorithm=JWT_ALGORITHM)
 
@@ -248,6 +250,9 @@ def decode_token(token):
 
 
 def refresh_token(token):
+	"""Get new token from last stored in cookies
+	With cheating - decoder omits token expiration time
+	and should always return new JWT."""
 	try:
 		token_dict = jwt.decode(
 			token, JWT_SECRET, algorithms=[JWT_ALGORITHM],
@@ -261,49 +266,25 @@ def refresh_token(token):
 
 
 def cookie_token():
+	"""Get new token from last stored in cookies"""
 	access_token = request.cookies.get('jwttoken')
-	print("!!!!!!!!!!!!!jwt", access_token)
-	return refresh_token(token=access_token)
+	try:
+		jwt_dict = jwt.decode(access_token, JWT_SECRET, algorithms=[JWT_ALGORITHM])
+	except JWTError as e:
+		print("JWTError occurred decoding to dict:", e)
+	else:
+		user_pub_id = jwt_dict['sub']
+		return jsonify({"Bearer": generate_token(user_pub_id)})
 
-
-def get_secret(user, token_info) -> str:
-	return '''
-	You are user_id {user} and the secret is 'wbevuec'.
-	Decoded token claims: {token_info}.
-	'''.format(user=user, token_info=token_info)
-
-
-# #	to_update = Geolocation.query.filter(
-# 		Geolocation.id == loc_id).one_or_none()
-# 	if to_update:
-# 		# # use db model schema
-# 		schema = GeolocationSchema()
-# 		# geolocation object (dict) -> db model geolocation instance
-# 		input_to_db = schema.load(geolocation, session=db.session)
-# 		# Set the id to the person we want to update
-#
-# 		input_to_db.id = to_update.id
-# 		db.session.merge(input_to_db)
-# 		db.session.commit()
-# 		#
-# 		# # return updated person in the response
-# 		output_dump = schema.dump(input_to_db)
-# if request.method == 'POST':
-# 	dict_data = request.get_json()
-# 	new_loc = Geolocation(dict_data)
-# 	db.session.add(new_loc)
-# 	db.session.commit()
-# 	return jsonify(
-# 		201, f"Geolocation created for: {new_loc.id}", dict_data)
 
 def retrieve_all_users():
 	"""
 	Retrieve list of all records in Users table
 	:return:            list of matching objects
 	"""
-	locations = User.query.all()
-	if locations:
-		return jsonify(200, [loc.serialize() for loc in locations])
+	users = User.query.all()
+	if users:
+		return jsonify(200, [usr.serialize() for usr in users])
 	else:
 		return jsonify(204, f"Records not found.")
 
@@ -327,11 +308,9 @@ def register():
 
 	query = User.query.filter_by(login=login).one_or_none()
 
-	print(query)
 	if query:
-		return "Similar instance already exists. Try different login."
-		# if User.query.filter(User.login == login):
-		# 	return jsonify({"msg": "Given login already taken"})
+		return jsonify(
+			201, "Similar instance already exists. Try different login.")
 	else:
 		new_user = User(login, password)
 		if first_name:
@@ -340,25 +319,30 @@ def register():
 			new_user.last_name = last_name
 		if email:
 			new_user.email = email
+		fourth_set.append(new_user.serialize())
 		db.session.add(new_user)
 		db.session.commit()
 		return jsonify({"Registered as": new_user.login})
 
 
 def log_in():
+	"""
+	The Simplest API login.
+	:param 		requestBody: require passing correct login and password of
+	existing user
+	:return 	JWT: encoded authorization token for given user on success,
+	401/404 on incorrect credentials
+	"""
 	user = request.get_json()
-	usr = user['login']
+	lgn = user['login']
 	pwd = user['password']
 
-	# [User.login_validation(_password=password)]
-	print(usr, pwd)
-
-	query = User.query.filter_by(login=usr).one_or_none()
+	query = User.query.filter_by(login=lgn).one_or_none()
 	if query:
 		check = chpass(query.password, pwd)
 		if check:
-			print(f"Credentials correct for {usr}")
-			jwt_token = generate_token(query.id)
+			print(f"Credentials correct for {lgn}")
+			jwt_token = generate_token(query.public_id)
 			json_output = jsonify(
 				{
 					"Authenticated as": query.login,
@@ -368,40 +352,21 @@ def log_in():
 			response = make_response(json_output)
 			response.set_cookie(key='jwttoken', value=jwt_token)
 			return response
-			# return jsonify(
-			# 	{
-			# 		"Authenticated as": query.login,
-			# 		"Bearer": jwt_token
-			# 		}
-			# 	)
 		else:
 			jsonify(401, "Wrong password.")
 	else:
 		return jsonify(404, "Login not found in database. Please check Your "
 							"input again or register.")
 
-	# print(query1.id, query1.password)
-	# if query:
-	# 	print(query.id)
-	# 	jwt_token = generate_token(query.id)
-	# 	return jsonify(
-	# 		"Authenticated as:", query.login, query.firstname,
-	# 		"Bearer:", jwt_token)
-	# return jsonify(404, "User not found in database. Please try again or"
-	# 					" register.")
 
-
-	# 	return generate_token(use.id)
-	# return jsonify([{usr:pwd },{user : password}]), 401
-
-
-# access_token = create_access_token(identity=user_login)
-# return jsonify(access_token=access_token)
+def to_json():
+	third_set.extend(fourth_set)
+	data_set = json.dumps(third_set)
+	with open('backup.json', 'a') as backup:
+		backup.write(third_set)
 
 
 if __name__ == '__main__':
 	init_db()
 	conned_app.add_api('openapi.yaml', resolver=RestyResolver('run'))
 	conned_app.run(host='127.0.0.1', port=5000, debug=True)
-# conned_app.add_api("openapi.yaml", resolver=RestyResolver('run'))
-# conned_app.run(host='127.0.0.1', port=5000, debug=True)

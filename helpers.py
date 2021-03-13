@@ -1,5 +1,5 @@
-from run import json, Geolocation, request, db, conned_app
-import requests, os
+from misc.run import json, Geolocation, db, conned_app
+import os
 
 app = conned_app
 
@@ -29,8 +29,8 @@ with open(loc) as json_file:
 		print(k, v)
 
 # Delete database file if it exists currently
-if os.path.exists('geo.db'):
-	os.remove('geo.db')
+if os.path.exists('misc/geo.db'):
+	os.remove('misc/geo.db')
 
 # Create the database
 db.create_all()

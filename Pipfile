@@ -23,7 +23,6 @@ marshmallow = "*"
 swagger-ui-bundle = "*"
 jose = "*"
 six = "*"
-flask-jwt-extended = "*"
 crypto = "*"
 python-jose = {extras = ["cryptography"], version = "*"}
 python-dotenv = "*"

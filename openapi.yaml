@@ -1,0 +1,425 @@
+openapi: 3.0.1
+info:
+  title: Geolocation API DOCS
+  description: powered by OpenAPI3
+  version: 1.0.0
+servers:
+- url: /
+paths:
+  /geolocations/:
+    get:
+      tags:
+      - Geolocalization
+      summary: Retrieve all records
+      description: Listing of all stored geolocalization data
+      operationId: run.retrieve_all
+      responses:
+        200:
+          description: Successful list operation
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    id:
+                      type: integer
+                      description: Unique identificatior of single data record
+                    input_data:
+                      type: string
+                      description: User input given for geolocalization
+                    ip:
+                      type: string
+                      description: Collected IP address
+                    type:
+                      type: string
+                      description: Collected IP addres type (IPv4/IPv6)
+                    county_code:
+                      type: string
+                      description: Collected IP addres type (IPv4/IPv6)
+                    country_name:
+                      type: string
+                    region_name:
+                      type: string
+                    city:
+                      type: string
+                    latitude:
+                      type: string
+                    longitude:
+                      type: string
+                    location:
+                      type: object
+                      properties: {}
+    post:
+      tags:
+      - Geolocalization
+      summary: Create record
+      description: Create new geolocation from provided data set
+      operationId: run.create
+      requestBody:
+        description: New geolocation object
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                ip:
+                  type: string
+                type:
+                  type: string
+                county_code:
+                  type: string
+                country_name:
+                  type: string
+                region_name:
+                  type: string
+                city:
+                  type: string
+                latitude:
+                  type: string
+                longitude:
+                  type: string
+                location:
+                  type: object
+                properties: {}
+        required: true
+      responses:
+        200:
+          description: Successful create operation
+          content:
+            application/json:
+              schema:
+                type: object
+      security:
+      - JWTokenAuth: ['secret']
+      x-codegen-request-body-name: geolocation
+  /geolocations/{loc_id}:
+    get:
+      tags:
+      - Geolocalization
+      summary: Retrieve single record
+      description: Geolocalization data from given record
+      operationId: run.retrieve_one
+      parameters:
+      - name: loc_id
+        in: path
+        description: ID of the record
+        required: true
+        schema:
+          type: integer
+      responses:
+        200:
+          description: Successful retrieve operation
+          content:
+            application/json:
+              schema:
+                type: object
+    put:
+      tags:
+      - Geolocalization
+      summary: Update record
+      description: Update geolocalization data for record with given ID
+      operationId: run.update_one
+      parameters:
+      - name: loc_id
+        in: path
+        description: ID of the record
+        required: true
+        schema:
+          type: integer
+      requestBody:
+        description: object data to update from
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                ip:
+                  type: string
+                type:
+                  type: string
+                county_code:
+                  type: string
+                country_name:
+                  type: string
+                region_name:
+                  type: string
+                city:
+                  type: string
+                latitude:
+                  type: string
+                longitude:
+                  type: string
+                location:
+                  type: object
+                properties: {}
+        required: true
+      responses:
+        200:
+          description: Successful update operation
+          content:
+            application/json:
+              schema:
+                type: object
+      security:
+      - JWTokenAuth: ['secret']
+      x-codegen-request-body-name: geolocation
+    delete:
+      tags:
+      - Geolocalization
+      summary: Delete record
+      description: Delete geolocalization data for passed ID
+      operationId: run.safe_delete
+      parameters:
+      - name: loc_id
+        in: path
+        description: ID of the record
+        required: true
+        schema:
+          type: integer
+      responses:
+        200:
+          description: Successful delete operation
+          content: {}
+  /geolocations/input_ip={input_ip}:
+    post:
+      tags:
+      - Geolocalization
+      summary: Create new record
+      description: Add geolocation data collected from given IP address
+      operationId: run.create_with_ip
+      parameters:
+      - name: input_ip
+        in: path
+        description: IP address to send for geolocation
+        required: true
+        example: 93.157.100.49
+        schema:
+          type: string
+      responses:
+        200:
+          description: Successful create operation
+          content:
+            application/json:
+              schema:
+                type: object
+      security:
+      - JWTokenAuth: ['secret']
+  /geolocations/input_domain={input_domain}:
+    post:
+      tags:
+      - Geolocalization
+      summary: Create new record
+      description: Add geolocation data obtained from domain address
+      operationId: run.create_with_domain
+      parameters:
+      - name: input_domain
+        in: path
+        description: Domain address to send for geolocation
+        required: true
+        example: www.mynthon.net
+        schema:
+          type: string
+      responses:
+        200:
+          description: Successful create operation
+          content:
+            application/json:
+              schema:
+                type: object
+      security:
+      - JWTokenAuth: ['secret']
+  /deleted/:
+    get:
+      tags:
+      - Geolocalization
+      summary: Data removed from main collection
+      description: Records may be permanently removed or restored
+      operationId: run.list_deleted
+      responses:
+        200:
+          description: Safe-deleted records listing
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    id:
+                      type: number
+                    ip:
+                      type: string
+                    type:
+                      type: string
+                    country_name:
+                      type: string
+                    city:
+                      type: string
+      security:
+      - JWTokenAuth: ['secret']
+  /deleted/{loc_id}:
+    put:
+      tags:
+      - Geolocalization
+      summary: 'PUT: Put back to main API.'
+      description: Send PUT request with record ID to restore for main API.
+      operationId: run.restore_deleted
+      parameters:
+      - name: loc_id
+        in: path
+        description: ID of the record
+        required: true
+        schema:
+          type: integer
+      responses:
+        200:
+          description: Data restored
+          content: {}
+      security:
+      - JWTokenAuth: ['secret']
+      x-swagger-router-controller: run
+    delete:
+      tags:
+      - Geolocalization
+      summary: 'DELETE: Delete permanently.'
+      description: Send DELETE request with record ID for permanent removal from database.
+      operationId: run.remove_deleted
+      parameters:
+      - name: loc_id
+        in: path
+        description: ID of the record
+        required: true
+        schema:
+          type: integer
+      responses:
+        200:
+          description: Data removed permanently
+          content: {}
+      security:
+      - JWTokenAuth: ['secret']
+      x-swagger-router-controller: run
+  /auth/login:
+    post:
+      tags:
+      - User
+      summary: POST data for authentication.
+      description: Authentication
+      operationId: run.log_in
+      requestBody:
+        description: user instance
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                login:
+                  type: string
+                password:
+                  type: string
+        required: true
+      responses:
+        200:
+          description: User authenticated
+          content: {}
+        401:
+          description: Wrong credentials
+          content: {}
+      x-codegen-request-body-name: user
+  /auth/{user_id}:
+    get:
+      tags:
+        - JWT
+      summary: JWT shortcut
+      operationId: run.generate_token
+      parameters:
+      - name: user_id
+        description: User unique identifier
+        in: path
+        required: true
+        example: 12
+        schema:
+          type: integer
+      responses:
+        '200':
+          description: JWT token
+          content:
+            'text/plain':
+              schema:
+                type: string
+  /auth/users:
+     get:
+       tags:
+         - User
+       summary: Retrieve all users
+       description: Listing user all users stored in the database
+       operationId: run.retrieve_all_users
+       responses:
+         200:
+           description: Retrieved all available instances
+           content:
+             application/json:
+               schema:
+                 type: array
+                 items:
+                   type: object
+                   properties:
+                     id:
+                       type: number
+                     login:
+                       type: string
+  /auth:
+     get:
+       tags:
+         - User
+       summary: Retrieve token from cookie
+       description: Refresh
+       operationId: run.cookie_token
+       responses:
+        '200':
+          description: JWT cookie
+          content:
+            'application/json':
+              schema:
+                type: string
+  /auth/register:
+    post:
+      tags:
+        - User
+      summary: Create new user
+      description: Get authorized
+      operationId: run.register
+      requestBody:
+        description: New user instance
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                login:
+                  type: string
+                password:
+                  type: string
+                first_name:
+                  type: string
+                last_name:
+                  type: string
+                email:
+                  type: string
+        required: true
+      responses:
+        200:
+          description: User authenticated
+          content: { }
+        401:
+          description: Wrong credentials
+          content: { }
+      x-codegen-request-body-name: user
+components:
+  securitySchemes:
+    JWTokenAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      x-bearerInfoFunc: run.decode_token

@@ -9,7 +9,7 @@ paths:
   /geolocations/:
     get:
       tags:
-      - Geolocalization
+      - Geolocalizations
       summary: Retrieve all records
       description: Listing of all stored geolocalization data
       operationId: run.retrieve_all
@@ -53,7 +53,7 @@ paths:
                       properties: {}
     post:
       tags:
-      - Geolocalization
+      - Geolocalizations
       summary: Create record
       description: Create new geolocation from provided data set
       operationId: run.create
@@ -97,7 +97,7 @@ paths:
   /geolocations/{loc_id}:
     get:
       tags:
-      - Geolocalization
+      - Geolocalizations
       summary: Retrieve single record
       description: Geolocalization data from given record
       operationId: run.retrieve_one
@@ -117,7 +117,7 @@ paths:
                 type: object
     put:
       tags:
-      - Geolocalization
+      - Geolocalizations
       summary: Update record
       description: Update geolocalization data for record with given ID
       operationId: run.update_one
@@ -167,7 +167,7 @@ paths:
       x-codegen-request-body-name: geolocation
     delete:
       tags:
-      - Geolocalization
+      - Geolocalizations
       summary: Delete record
       description: Delete geolocalization data for passed ID
       operationId: run.safe_delete
@@ -182,10 +182,10 @@ paths:
         200:
           description: Successful delete operation
           content: {}
-  /geolocations/input_ip={input_ip}:
+  /geolocations/{input_ip}:
     post:
       tags:
-      - Geolocalization
+      - Geolocalizations
       summary: Create new record
       description: Add geolocation data collected from given IP address
       operationId: run.create_with_ip
@@ -206,10 +206,10 @@ paths:
                 type: object
       security:
       - JWTokenAuth: ['secret']
-  /geolocations/input_domain={input_domain}:
+  /geolocations/{input_domain}:
     post:
       tags:
-      - Geolocalization
+      - Geolocalizations
       summary: Create new record
       description: Add geolocation data obtained from domain address
       operationId: run.create_with_domain
@@ -230,10 +230,10 @@ paths:
                 type: object
       security:
       - JWTokenAuth: ['secret']
-  /deleted/:
+  /geolocations/deleted/:
     get:
       tags:
-      - Geolocalization
+      - Geolocalizations
       summary: Data removed from main collection
       description: Records may be permanently removed or restored
       operationId: run.list_deleted
@@ -259,10 +259,10 @@ paths:
                       type: string
       security:
       - JWTokenAuth: ['secret']
-  /deleted/{loc_id}:
+  /geolocations/deleted/{loc_id}:
     put:
       tags:
-      - Geolocalization
+      - Geolocalizations
       summary: 'PUT: Put back to main API.'
       description: Send PUT request with record ID to restore for main API.
       operationId: run.restore_deleted
@@ -282,7 +282,7 @@ paths:
       x-swagger-router-controller: run
     delete:
       tags:
-      - Geolocalization
+      - Geolocalizations
       summary: 'DELETE: Delete permanently.'
       description: Send DELETE request with record ID for permanent removal from database.
       operationId: run.remove_deleted
@@ -300,62 +300,40 @@ paths:
       security:
       - JWTokenAuth: ['secret']
       x-swagger-router-controller: run
-  /users:
-     get:
-       tags:
-         - User
-       summary: Retrieve all users
-       description: Listing user all users stored in the database
-       operationId: run.retrieve_all_users
-       responses:
-         200:
-           description: Retrieved all available instances
-           content:
-             application/json:
-               schema:
-                 type: array
-                 items:
-                   type: object
-                   properties:
-                     id:
-                       type: number
-                     login:
-                       type: string
-       security:
-       - JWTokenAuth: ['secret']
-  /users/register:
-    post:
+  /auth/{public_id}:
+    get:
       tags:
-        - User
-      summary: Register new user
-      description: Create new user from given request body
-      operationId: run.register
-      requestBody:
-        description: Object filled with data to create new user
-        content:
-          application/json:
-            schema:
-              type: object
-              properties:
-                login:
-                  type: string
-                password:
-                  type: string
-                first_name:
-                  type: string
-                last_name:
-                  type: string
-                email:
-                  type: string
-        required: true
+        - Auth
+      summary: JWT shortcut
+      operationId: run.generate_token
+      parameters:
+        - name: public_id
+          description: User unique identifier
+          in: path
+          required: true
+          schema:
+            type: string
       responses:
-        200:
-          description: User authenticated
-          content: { }
-        401:
-          description: Wrong credentials
-          content: { }
-      x-codegen-request-body-name: user
+        '200':
+          description: JWT token
+          content:
+            'application/json':
+              schema:
+                type: string
+  /auth/cookies:
+    get:
+      tags:
+        - Auth
+      summary: Retrieve token from cookie
+      description: Refresh
+      operationId: run.cookie_token
+      responses:
+        '200':
+          description: JWT cookie
+          content:
+            'application/json':
+              schema:
+                type: string
   /auth/login:
     post:
       tags:
@@ -383,40 +361,84 @@ paths:
           description: Wrong credentials
           content: { }
       x-codegen-request-body-name: user
-  /auth/cookies:
+  /users:
      get:
        tags:
-         - Auth
-       summary: Retrieve token from cookie
-       description: Refresh
-       operationId: run.cookie_token
+         - Users
+       summary: Retrieve all users
+       description: Listing user all users stored in the database
+       operationId: run.retrieve_all_users
        responses:
-        '200':
-          description: JWT cookie
-          content:
-            'application/json':
-              schema:
-                type: string
-  /auth/{public_id}:
+         200:
+           description: Retrieved all available instances
+           content:
+             application/json:
+               schema:
+                 type: array
+                 items:
+                   type: object
+                   properties:
+                     id:
+                       type: number
+                     login:
+                       type: string
+       security:
+       - JWTokenAuth: ['secret']
+     post:
+       tags:
+         - Users
+       summary: Create new user instance
+       description: Register new user from given request body
+       operationId: run.register
+       requestBody:
+         description: Object filled with data to create new user
+         content:
+           application/json:
+             schema:
+               type: object
+               properties:
+                 login:
+                   type: string
+                 password:
+                   type: string
+                 first_name:
+                   type: string
+                 last_name:
+                   type: string
+                 email:
+                   type: string
+         required: true
+       responses:
+         200:
+           description: User authenticated
+           content: { }
+         401:
+           description: Wrong credentials
+           content: { }
+       x-codegen-request-body-name: user
+  /users/{user_id}:
     get:
       tags:
-        - Auth
-      summary: JWT shortcut
-      operationId: run.generate_token
+        - Users
+      summary: Retrieve user with given id
+      description: Detailed view on specified user data
+      operationId: run.retrieve_one_user
       parameters:
-        - name: public_id
-          description: User unique identifier
+        - name: user_id
           in: path
+          description: ID of the user
           required: true
           schema:
-            type: string
+            type: integer
       responses:
-        '200':
-          description: JWT token
-          content:
-            'application/json':
-              schema:
-                type: string
+        200:
+          description: Record retrieved
+          content: { }
+        404:
+          description: Record not found
+          content: { }
+      security:
+        - JWTokenAuth: [ 'secret' ]
 components:
   securitySchemes:
     JWTokenAuth:

@@ -34,12 +34,9 @@ class Geolocation(db.Model):
         """Serialize record fields for list view"""
         return {
             "id": self.id,
-            # "user_input": self.input_data,
             "ip_address": self.ip,
             "ip_type": self.type,
-            # "continent": self.continent_code,
             "continent_name": self.continent_name,
-            # self.country_code,
             "country": self.country_name,
             "region": self.region_name,
             "city": self.city,

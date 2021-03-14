@@ -272,7 +272,9 @@ def cookie_token():
 		print("JWTError occurred decoding to dict:", e)
 	else:
 		user_pub_id = jwt_dict['sub']
-		return jsonify({"Bearer": generate_token(user_pub_id)})
+		return jsonify(
+			{"Authenticated": user_pub_id,
+			 "Bearer": generate_token(user_pub_id)})
 
 
 # USERS
@@ -338,8 +340,8 @@ def register():
 		db.session.commit()
 		new = User.query.filter_by(login=login).one()
 		return jsonify({
-				"Registered as": new_user.login,
-				"Authentication token": generate_token(new.public_id)
+				"Registered with": new_user.public_id,
+				"Bearer": generate_token(new.public_id)
 				})
 
 
@@ -361,13 +363,12 @@ def log_in():
 		if check:
 			print(f"Credentials correct for {lgn}")
 			jwt_token = generate_token(query.public_id)
-			json_output = jsonify(
-				{
-					"Authenticated as": query.login,
-					"Bearer": jwt_token
-					}
-				)
-			response = make_response(json_output)
+			auth_dict = {
+				"Authenticated as": query.login,
+				"Bearer": jwt_token
+				}
+			response = make_response(jsonify(auth_dict))
+			response.headers["Authorization"] = f"Bearer {jwt_token}"
 			response.set_cookie(key='jwttoken', value=jwt_token)
 			return response
 		else:

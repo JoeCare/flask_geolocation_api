@@ -1,0 +1,4 @@
+selenium="*"
+setuptools="*"
+httpie=*=
+httpie-jwt-auth=*=

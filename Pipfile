@@ -28,6 +28,10 @@ six = "*"
 crypto = "*"
 python-jose = {extras = ["cryptography"], version = "*"}
 python-dotenv = "*"
+selenium = "*"
+setuptools = "*"
+httpie = "*"
+httpie-jwt-auth = "*"
 
 [dev-packages]
 

@@ -105,7 +105,7 @@ def retrieve_one(loc_id):
 		data = schema.dump(query)
 		return data
 	else:
-		return jsonify(200, f"Record not found for ID: {loc_id}")
+		return jsonify(404, f"Record not found for ID: {loc_id}")
 
 
 def update_one(loc_id, geolocation):
@@ -214,16 +214,12 @@ def remove_deleted(loc_id):
 		jsonify(404, f"Record not found in database for ID: {loc_id}")
 
 
-# AUTH jose
+# AUTH simple JWT with jose
 #========================
 JWT_ISSUER = 'com.zalando.connexion'
 JWT_SECRET = os.getenv("JWT_SECRET")
-JWT_LIFETIME_SECONDS = 600
+JWT_LIFETIME_SECONDS = 900
 JWT_ALGORITHM = os.getenv("JWT_ALGORITHM")
-
-
-def _current_timestamp() -> int:
-	return int(time.time())
 
 
 def generate_token(public_id):
@@ -232,7 +228,7 @@ def generate_token(public_id):
 	:param public_id:	unique string user identification
 	:return 	JWT:	authorization token for given public_id
 	"""
-	timestamp = _current_timestamp()
+	timestamp = int(time.time())
 	payload = {
 		"iss": JWT_ISSUER,
 		"iat": int(timestamp),
@@ -250,13 +246,10 @@ def decode_token(token):
 
 
 def refresh_token(token):
-	"""Get new token from last stored in cookies
-	With cheating - decoder omits token expiration time
-	and should always return new JWT."""
+	"""Get new token from last stored in cookies"""
 	try:
 		token_dict = jwt.decode(
-			token, JWT_SECRET, algorithms=[JWT_ALGORITHM],
-			options={'verify_exp': False})
+			token, JWT_SECRET, algorithms=[JWT_ALGORITHM])
 		print("expired to refresh:", token_dict)
 	except JWTError as e:
 		print("JWTError with dict occured:", e)
@@ -266,16 +259,24 @@ def refresh_token(token):
 
 
 def cookie_token():
-	"""Get new token from last stored in cookies"""
+	"""Get new token from last stored in cookies
+	With cheating - decoder omits token expiration time
+	and should always return new JWT."""
 	access_token = request.cookies.get('jwttoken')
 	try:
-		jwt_dict = jwt.decode(access_token, JWT_SECRET, algorithms=[JWT_ALGORITHM])
+		jwt_dict = jwt.decode(
+			access_token, JWT_SECRET,
+			algorithms=[JWT_ALGORITHM], options={'verify_exp': False}
+			)
 	except JWTError as e:
 		print("JWTError occurred decoding to dict:", e)
 	else:
 		user_pub_id = jwt_dict['sub']
 		return jsonify({"Bearer": generate_token(user_pub_id)})
 
+
+# USERS
+#=======================
 
 def retrieve_all_users():
 	"""
@@ -287,6 +288,19 @@ def retrieve_all_users():
 		return jsonify(200, [usr.serialize() for usr in users])
 	else:
 		return jsonify(204, f"Records not found.")
+
+
+def retrieve_one_user(user_id):
+	"""
+	Return one record from the collection matching given ID
+	:param user_id:   	user basic ID number
+	:return:            matching data object
+	"""
+	query = User.query.filter(User.id == user_id).one_or_none()
+	if query:
+		return jsonify(200, query.detailed())
+	else:
+		return jsonify(404, f"Record not found for ID: {user_id}")
 
 
 def register():
@@ -322,7 +336,11 @@ def register():
 		fourth_set.append(new_user.serialize())
 		db.session.add(new_user)
 		db.session.commit()
-		return jsonify({"Registered as": new_user.login})
+		new = User.query.filter_by(login=login).one()
+		return jsonify({
+				"Registered as": new_user.login,
+				"Authentication token": generate_token(new.public_id)
+				})
 
 
 def log_in():

@@ -1,17 +1,9 @@
 from settings import db, mm, app, conned_app, os, load_dotenv, find_dotenv
-from connexion import RestyResolver
-from flask_sqlalchemy import SQLAlchemy
-from sqlalchemy import Table, Column, Integer, Text, JSON, String, \
-    create_engine
-from sqlalchemy.orm import relationship
-from sqlalchemy.ext.declarative import declarative_base
-import ipaddress
-from cryptography.fernet import Fernet
-# Base = declarative_base()
-import base64 as b64
-# engine = create_engine("sqlite+pysqlite:///:memory:", echo=True)
-# db = SQLAlchemy(app)
-# db.app = app
+from sqlalchemy import Column, Integer, Text, JSON, String
+from werkzeug.security import generate_password_hash as gpass
+from werkzeug.security import check_password_hash as chpass
+import ipaddress, uuid
+
 load_dotenv(find_dotenv())
 
 
@@ -39,6 +31,7 @@ class Geolocation(db.Model):
             setattr(self, k, v)
 
     def serialize(self):
+        """Serialize record fields for list view"""
         return {
             "id": self.id,
             # "user_input": self.input_data,
@@ -55,6 +48,7 @@ class Geolocation(db.Model):
             }
 
     def short(self):
+        """Serialize record output with most essential fields."""
         return {
             "id": self.id,
             "ip_address": self.ip,
@@ -77,70 +71,46 @@ class GeolocationSchema(mm.SQLAlchemyAutoSchema):
 class User(db.Model):
     __tablename__ = 'user'
     id = Column(Integer, primary_key=True, autoincrement=True, nullable=False)
+    public_id = Column(String(50), unique=True)
     login = Column(String, nullable=False)
-    password = Column(db.LargeBinary, nullable=False)
-    class_identifier = os.getenv('USER_CLASS_ID')
+    password = Column(Text, nullable=False)
+    first_name = Column(String, nullable=True)
+    last_name = Column(String, nullable=True)
+    email = Column(String, nullable=True)
 
-    # to_text = bytes(cipher_decrypt).decode("utf-8")
-    fer_key = b'OFeo_fuh6REZZMMvxAEgFL9pKr0a5-sscn-lB5wxXqY='
-
-    def __init__(self, login, password, _key=fer_key):
-        print(login, password, _key)
+    def __init__(self, login, password):
+        self.password = gpass(password, salt_length=6)
         self.login = login
-        fer_cipher = Fernet(_key)
-        cipher_encrypt = fer_cipher.encrypt(bytes(password, 'utf-8'))
-        self.password = cipher_encrypt
-        print(self.password)
+        self.public_id = str(uuid.uuid4())
 
-    def parse_on_login(self, _login, _password, _key=fer_key):
-        if self.login == _login:
-            fer_cipher = Fernet(_key)
-            cipher_decrypt = fer_cipher.decrypt(self.password)
-            text = bytes(cipher_decrypt).decode("utf-8")
-            if text == _password:
-                return True
-            else:
-                return 401, "Invalid password"
-        return 401, "Login failed found"
+    def detailed(self):
+        """Serialize record with all available data"""
+        return {
+            "user_id": self.id,
+            "login": self.login,
+            "password_hash": self.password,
+            "firstname": self.first_name,
+            "lastname": self.last_name,
+            "email": self.email,
+            "public_id": self.public_id,
+            }
 
-    def retrieve_all_users():
-        locations = User.query.all()
-        if locations:
-            return jsonify([loc.serialize() for loc in locations])
-        return jsonify(f"Records not found.")
+    def serialize(self):
+        """Serialize record output without password"""
+        return {
+            "user_id": self.id,
+            "login": self.login,
+            "firstname": self.first_name,
+            }
 
-    def register():
-        login = request.json.get("login", None)
-        password = request.json.get("password", None)
-        if len(password) < 8:
-            return jsonify({
-                               "msg": "Please set password for at least 8"
-                                      "characters"
-                               }), 401
+    @staticmethod
+    def login_validation(_password, current_pass=password, usr_id=id):
+        if current_pass == _password:
+            return usr_id
+        elif chpass(current_pass, _password):
+            return usr_id
         else:
-            if User.query.filter(User.login == login):
-                return jsonify({"msg": "Given login already taken"})
-            else:
-                new_user = User(login, password)
-                db.session.add(new_user)
-                db.session.commit()
-                return generate_token(new_user.id)
-
-    # 	access_token = create_access_token(identity=login)
-    # return jsonify(access_token=access_token)
-
-    def login():
-        user_login = request.json.get("login", None)
-        password = request.json.get("password", None)
-        if User.parse_on_login(User, _login=user_login, _password=password):
-            query = User.query.filter_by(login=user_login).one_or_none()
-            if query:
-                schema = GeolocationSchema()
-                data = schema.dump(query)
-                return generate_token(data['id'])
-        return jsonify({"msg": "Invalid credentials"}), 401
-    # access_token = create_access_token(identity=user_login)
-    # return jsonify(access_token=access_token)
+            return False
 
 
 class UserSchema(mm.SQLAlchemyAutoSchema):
@@ -151,7 +121,7 @@ class UserSchema(mm.SQLAlchemyAutoSchema):
         model = User
         alchemy_session = db.session
         load_instance = True
-        exclude = ['password', 'class_identifier']
+        exclude = ['password', 'email']
 
 
 def ip_validator(_ip):
@@ -163,6 +133,7 @@ def ip_validator(_ip):
 
 
 test_set = ['160.39.144.19',
+            '208.113.217.212',
             '134.201.250.155',
             '110.174.165.78',
             '72.229.28.185',
@@ -182,7 +153,6 @@ test_set = ['160.39.144.19',
             '88.230.139.194',
             '219.143.81.80'
             ]
-
 second_set = [
     "241.28.103.93",
     "161.47.118.200",
@@ -195,55 +165,9 @@ second_set = [
     "155.22.16.173",
     "32.1.213.113",
     ]
-
 third_set = []
+fourth_set = []
 
 
 def init_db():
     db.create_all()
-
-
-        # return render_template('index.html',
-            #                        message='You have already submitted feedback')
-
-    #
-    # def add_new(_name, _price, _isbn):
-    #     new_location = Geolocation()
-    #     db.session.add(new_location)
-    #     db.session.commit()
-
-
-    #
-    # def get_all():
-    #     return [Book.json(book) for book in Book.query.all()]
-    #
-    # def get_by(_isbn):
-    #     return Book.query.filter_by(isbn=_isbn).first()
-    #
-    # def delete_by(_isbn):
-    #     Book.query.filter_by(isbn=_isbn).delete()
-    #     db.session.commit()
-    #
-    # def change_by(_isbn, **kwargs):
-    #     replaced_object = Book.query.filter_by(isbn=_isbn).first()
-    #     if "price" in kwargs.keys():
-    #         replaced_object.price = kwargs["price"]
-    #     if "name" in kwargs.keys():
-    #         replaced_object.name = kwargs["name"]
-    #     db.session.commit()
-    #
-    # def replace_by(_isbn, _name, _price):
-    #     replaced_object = Book.query.filter_by(isbn=_isbn).first()
-    #     print(type(replaced_object))
-    #     replaced_object.price = _price
-    #     replaced_object.name = _name
-    #     db.session.commit()
-
-    # def __repr__(self):
-    #     book_object = {
-    #         "name": self.name,
-    #         "price": self.price,
-    #         "isbn": self.isbn
-    #     }
-    #     return json.dumps(book_object)
-    #     # used only for console info

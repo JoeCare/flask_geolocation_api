@@ -1,14 +1,14 @@
-from flask_jwt_extended import create_access_token
-from models import (db, app, conned_app, ip_validator, Geolocation,
-					GeolocationSchema, User, UserSchema, init_db, third_set)
-from flask import json, request, jsonify
-import requests, os
+from models import (
+	db, app, conned_app, ip_validator, Geolocation, GeolocationSchema,
+	User, UserSchema, init_db, third_set, fourth_set, gpass, chpass,
+	load_dotenv, find_dotenv)
+from flask import json, request, jsonify, make_response
+import requests, os, time, six
 from connexion.resolver import RestyResolver
-#==========
-import time
-import six
 from werkzeug.exceptions import Unauthorized
 from jose import JWTError, jwt
+
+load_dotenv(find_dotenv())
 
 
 def create():
@@ -27,7 +27,6 @@ def create():
 			201, f"Geolocation created for: {new_loc.id}", dict_data)
 
 
-# @app.route('/localizations/input_ip=<input_ip>', methods=['POST'])
 def create_with_ip(input_ip):
 	"""
 	Create a new geolocation record from data collected basing on given IP
@@ -39,7 +38,7 @@ def create_with_ip(input_ip):
 		if request.method == 'POST':
 			get_details = requests.get(
 				f'http://api.ipstack.com/{input_ip}?access_key'
-				f'={os.getenv("ipstackKey")}&security=1&output=json')
+				f'={os.getenv("ipstackKey")}&output=json')
 			if get_details.status_code == 200:
 				details = json.loads(get_details.content.decode())
 				third_set.append(details)
@@ -54,13 +53,12 @@ def create_with_ip(input_ip):
 			422, "Unprocessable input. Not correct IPv4/IPv6 address.")
 
 
-# @app.route('/localizations/input_domain=<input_domain>', methods=['POST'])
 def create_with_domain(input_domain):
 	"""
 	Create a new geolocation record from data collected basing on given domain
-	:param input_domain:	domain address passed to endpoints URL
-	:return:            201 on success, 406 if instance exists, 422 on input
-	unprocessable in geolocalization process
+	:param input_domain:		domain address passed to endpoints URL
+	:return:					201 on success, 406 if instance exists,
+	422 on input unprocessable in geolocalization process
 	"""
 	if request.method == 'POST':
 		get_details = requests.get(
@@ -72,8 +70,7 @@ def create_with_domain(input_domain):
 			new_loc = Geolocation(details, input_domain)
 			db.session.add(new_loc)
 			db.session.commit()
-			return jsonify(
-				{"Geolocation data collected for": input_domain}, details)
+			return jsonify(201, f"Record created for: {input_domain}", details)
 		else:
 			return jsonify(
 				422, "Unable to collect geolocation data. \
@@ -86,10 +83,10 @@ def retrieve_all():
 	:return:            list of matching objects
 	"""
 	locations = Geolocation.query.filter(Geolocation.visible == 1).all()
-	if not locations:
-		return jsonify(f"Records not found.")
+	if locations:
+		return jsonify([loc.serialize() for loc in locations])
 
-	return jsonify([loc.serialize() for loc in locations])
+	return jsonify(f"Records not found.")
 
 
 def retrieve_one(loc_id):
@@ -108,7 +105,7 @@ def retrieve_one(loc_id):
 		data = schema.dump(query)
 		return data
 	else:
-		return jsonify(f"Record not found for ID: {loc_id}")
+		return jsonify(200, f"Record not found for ID: {loc_id}")
 
 
 def update_one(loc_id, geolocation):
@@ -134,14 +131,14 @@ def update_one(loc_id, geolocation):
 		# # return updated person in the response
 		output_dump = schema.dump(input_to_db)
 
-		return 200, output_dump
+		return jsonify(200, output_dump)
 	else:
-		return 404, f"Person not found for Id:"
+		return jsonify(404, f"Person not found for Id: {loc_id}")
 
 
 def safe_delete(loc_id):
 	"""
-	Remove object from main collection but leaving record in database
+	Remove object from main collection but leaving record in a database
 	:param loc_id:		ID of the record to delete
 	:return:            200 on successful delete, 404 if not found
 	"""
@@ -152,7 +149,7 @@ def safe_delete(loc_id):
 		db.session.merge(location)
 		db.session.commit()
 		return jsonify(
-			200, f"Successfully deleted record for ID: {loc_id}")
+			202, f"Removed record from main API for ID: {loc_id}")
 	else:
 		jsonify(404, f"Record not found in database for ID: {loc_id}")
 
@@ -167,7 +164,7 @@ def list_deleted():
 		schema = GeolocationSchema(many=True)
 		data = schema.dump(locations)
 		return jsonify(
-			f"You've {len(locations)} records safely removed from main "
+			200, f"You've {len(locations)} records safely removed from main "
 			f"collection.", [loc.short() for loc in locations])
 	else:
 		return jsonify(404, "No records stored after safe-delete.")
@@ -175,7 +172,11 @@ def list_deleted():
 
 def restore_deleted(loc_id):
 	"""
-	Restore record of given ID from safe_deleted list to main API
+	PUT request sent to this endpoint restore record of given ID to main API
+	view. Works on records which were previously removed with default
+	safe_delete method.
+	list to
+	main API
 	:param loc_id:				ID of the record to restore
 	:return:            		200 on success, 404 if not found
 	"""
@@ -189,14 +190,14 @@ def restore_deleted(loc_id):
 			return jsonify(
 				200, f"Record restored for ID: {loc_id}")
 		else:
-			return jsonify("Valid methods: PUT, DELETE")
+			return jsonify(405, "Valid methods on that endpoint: PUT, DELETE")
 	else:
 		jsonify(404, f"Record not found in database for ID: {loc_id}")
 
 
 def remove_deleted(loc_id):
 	"""
-	Delete permanently record of given ID from safe_deleted list
+	Delete permanently record of given ID from safe_deleted list.
 	:param loc_id:				ID of the record to restore
 	:return:            		200 on success, 404 if not found
 	"""
@@ -208,35 +209,36 @@ def remove_deleted(loc_id):
 			db.session.commit()
 			return jsonify(
 				200, f"Record permanently removed for ID: {loc_id}")
-		return jsonify("Valid methods: PUT, DELETE")
+		return jsonify(405, "Valid methods on that endpoint: PUT, DELETE")
 	else:
 		jsonify(404, f"Record not found in database for ID: {loc_id}")
 
 
-def retrieve_all_users():
-	locations = User.query.all()
-	if locations:
-		return jsonify([loc.serialize() for loc in locations])
-	return jsonify(f"Records not found.")
-
-
-# AUTH
+# AUTH jose
 #========================
 JWT_ISSUER = 'com.zalando.connexion'
-JWT_SECRET = 'change_this'
+JWT_SECRET = os.getenv("JWT_SECRET")
 JWT_LIFETIME_SECONDS = 600
-JWT_ALGORITHM = 'HS256'
+JWT_ALGORITHM = os.getenv("JWT_ALGORITHM")
 
 
-def generate_token(user_id):
+def _current_timestamp() -> int:
+	return int(time.time())
+
+
+def generate_token(public_id):
+	"""
+	Simple token generator taking returning encoded JWT
+	:param public_id:	unique string user identification
+	:return 	JWT:	authorization token for given public_id
+	"""
 	timestamp = _current_timestamp()
 	payload = {
 		"iss": JWT_ISSUER,
 		"iat": int(timestamp),
 		"exp": int(timestamp + JWT_LIFETIME_SECONDS),
-		"sub": str(user_id),
+		"sub": str(public_id),
 		}
-
 	return jwt.encode(payload, JWT_SECRET, algorithm=JWT_ALGORITHM)
 
 
@@ -247,20 +249,124 @@ def decode_token(token):
 		six.raise_from(Unauthorized, e)
 
 
-def get_secret(user, token_info) -> str:
-	return '''
-	You are user_id {user} and the secret is 'wbevuec'.
-	Decoded token claims: {token_info}.
-	'''.format(user=user, token_info=token_info)
+def refresh_token(token):
+	"""Get new token from last stored in cookies
+	With cheating - decoder omits token expiration time
+	and should always return new JWT."""
+	try:
+		token_dict = jwt.decode(
+			token, JWT_SECRET, algorithms=[JWT_ALGORITHM],
+			options={'verify_exp': False})
+		print("expired to refresh:", token_dict)
+	except JWTError as e:
+		print("JWTError with dict occured:", e)
+	else:
+		user_pub_id = token_dict['sub']
+		return jsonify({"Refreshed_token": generate_token(user_pub_id)})
 
 
-def _current_timestamp() -> int:
-	return int(time.time())
+def cookie_token():
+	"""Get new token from last stored in cookies"""
+	access_token = request.cookies.get('jwttoken')
+	try:
+		jwt_dict = jwt.decode(access_token, JWT_SECRET, algorithms=[JWT_ALGORITHM])
+	except JWTError as e:
+		print("JWTError occurred decoding to dict:", e)
+	else:
+		user_pub_id = jwt_dict['sub']
+		return jsonify({"Bearer": generate_token(user_pub_id)})
+
+
+def retrieve_all_users():
+	"""
+	Retrieve list of all records in Users table
+	:return:            list of matching objects
+	"""
+	users = User.query.all()
+	if users:
+		return jsonify(200, [usr.serialize() for usr in users])
+	else:
+		return jsonify(204, f"Records not found.")
+
+
+def register():
+	"""
+	Create new User instance from given credentials and optional extra data
+	:param login:		given user login
+	:param password:	given password for authentication
+	:param first_name:	user first name
+	:param last_name:	user last name
+	:param email:		user email address
+	:return:            list of matching objects
+	"""
+	login = request.json.get("login", None)
+	password = request.json.get("password", None)
+	first_name = request.json.get("first_name")
+	last_name = request.json.get("last_name")
+	email = request.json.get("email")
+	print(login, password, first_name, last_name, email)
+
+	query = User.query.filter_by(login=login).one_or_none()
+
+	if query:
+		return jsonify(
+			201, "Similar instance already exists. Try different login.")
+	else:
+		new_user = User(login, password)
+		if first_name:
+			new_user.first_name = first_name
+		if last_name:
+			new_user.last_name = last_name
+		if email:
+			new_user.email = email
+		fourth_set.append(new_user.serialize())
+		db.session.add(new_user)
+		db.session.commit()
+		return jsonify({"Registered as": new_user.login})
+
+
+def log_in():
+	"""
+	The Simplest API login.
+	:param 		requestBody: require passing correct login and password of
+	existing user
+	:return 	JWT: encoded authorization token for given user on success,
+	401/404 on incorrect credentials
+	"""
+	user = request.get_json()
+	lgn = user['login']
+	pwd = user['password']
+
+	query = User.query.filter_by(login=lgn).one_or_none()
+	if query:
+		check = chpass(query.password, pwd)
+		if check:
+			print(f"Credentials correct for {lgn}")
+			jwt_token = generate_token(query.public_id)
+			json_output = jsonify(
+				{
+					"Authenticated as": query.login,
+					"Bearer": jwt_token
+					}
+				)
+			response = make_response(json_output)
+			response.set_cookie(key='jwttoken', value=jwt_token)
+			return response
+		else:
+			jsonify(401, "Wrong password.")
+	else:
+		return jsonify(404, "Login not found in database. Please check Your "
+							"input again or register.")
+
+
+def to_json():
+	third_set.extend(fourth_set)
+	data_set = json.dumps(third_set)
+	with open('backup.json', 'a') as backup:
+		backup.write(third_set)
 
 
 if __name__ == '__main__':
 	init_db()
 	conned_app.add_api('openapi.yaml', resolver=RestyResolver('run'))
 	conned_app.run(host='127.0.0.1', port=5000, debug=True)
-# conned_app.add_api("openapi.yaml", resolver=RestyResolver('run'))
-# conned_app.run(host='127.0.0.1', port=5000, debug=True)

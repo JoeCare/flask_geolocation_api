@@ -6,7 +6,7 @@ info:
 servers:
 - url: /
 paths:
-  /geolocations/:
+  /geolocations:
     get:
       tags:
       - Geolocalizations
@@ -230,7 +230,7 @@ paths:
                 type: object
       security:
       - JWTokenAuth: ['secret']
-  /geolocations/deleted/:
+  /geolocations/deleted:
     get:
       tags:
       - Geolocalizations

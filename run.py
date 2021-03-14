@@ -1,8 +1,6 @@
-from models import db, app, conned_app, ip_validator, Geolocation, \
-	GeolocationSchema, \
-	init_db, third_set
-# from settings import *
-# import settings
+from flask_jwt_extended import create_access_token
+from models import (db, app, conned_app, ip_validator, Geolocation,
+	GeolocationSchema, User, UserSchema, init_db, third_set)
 from flask import json, request, Response, jsonify, redirect
 import requests, os
 from connexion.resolver import RestyResolver
@@ -10,10 +8,6 @@ from connexion.resolver import RestyResolver
 # app = settings.app
 # conned_app = settings.conned_app
 # conned_app.add_api("swagger.yml", resolver=RestyResolver('run'))
-
-
-def start():
-	return "hello"
 
 
 def create():
@@ -214,6 +208,30 @@ def remove_deleted(loc_id):
 		return jsonify("Valid methods: PUT, DELETE")
 	else:
 		jsonify(404, f"Record not found in database for ID: {loc_id}")
+
+
+def register(login, password):
+	login = request.json.get("login", None)
+	password = request.json.get("password", None)
+	if len(password) < 8:
+		return jsonify({"msg": "Set password for at least 8 characters"}), 401
+	# else:
+		# if User.query.filter(User.login == login)
+		# User(login, password)
+	access_token = create_access_token(identity=login)
+	return jsonify(access_token=access_token)
+
+
+def login(user_login, password):
+	user_login = request.json.get("login", None)
+	password = request.json.get("password", None)
+	if len(password) < 8:
+		return jsonify({"msg": "Set password for at least 8 characters"}), 401
+	# else:
+		# if User.query.filter(User.login == login)
+		# User(login, password)
+	access_token = create_access_token(identity=user_login)
+	return jsonify(access_token=access_token)
 
 
 if __name__ == '__main__':

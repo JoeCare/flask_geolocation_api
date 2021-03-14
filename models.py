@@ -1,4 +1,5 @@
-from settings import db, mm, app, conned_app
+from settings import db, mm, app, conned_app, os, load_dotenv, find_dotenv
+from connexion import RestyResolver
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy import Table, Column, Integer, Text, JSON, String, \
     create_engine
@@ -11,6 +12,7 @@ import base64 as b64
 # engine = create_engine("sqlite+pysqlite:///:memory:", echo=True)
 # db = SQLAlchemy(app)
 # db.app = app
+load_dotenv(find_dotenv())
 
 
 class Geolocation(db.Model):
@@ -76,20 +78,30 @@ class User(db.Model):
     __tablename__ = 'user'
     id = Column(Integer, primary_key=True, autoincrement=True, nullable=False)
     login = Column(String, nullable=False)
-    password = Column(String, nullable=False)
-    user_identifier = Column(db.LargeBinary, nullable=False)
+    password = Column(db.LargeBinary, nullable=False)
+    class_identifier = os.getenv('USER_CLASS_ID')
 
-    # user_key = b'2tpdHLuGaGC4oYu-f3rNcWyF6JjB8Z87huE1_DfmvbA='
+    # to_text = bytes(cipher_decrypt).decode("utf-8")
+    fer_key = b'OFeo_fuh6REZZMMvxAEgFL9pKr0a5-sscn-lB5wxXqY='
 
-    def __init__(self, login, password, identifier=Fernet.generate_key()):
+    def __init__(self, login, password, _key=fer_key):
+        print(login, password, _key)
         self.login = login
-        self.user_identifier = identifier
-        fernet_cipher = Fernet(identifier)
-        cipher_encrypt = fernet_cipher.encrypt(bytes(password, 'utf-8'))
+        fer_cipher = Fernet(_key)
+        cipher_encrypt = fer_cipher.encrypt(bytes(password, 'utf-8'))
         self.password = cipher_encrypt
+        print(self.password)
 
-        deciphered = fernet_cipher.decrypt(ciphered)
-        to_text = bytes(deciphered).decode("utf-8")
+    def parse_on_login(self, _login, _password, _key=fer_key):
+        if self.login == _login:
+            fer_cipher = Fernet(_key)
+            cipher_decrypt = fer_cipher.decrypt(self.password)
+            text = bytes(cipher_decrypt).decode("utf-8")
+            if text == _password:
+                return True
+            else:
+                return 401, "Invalid password"
+        return 401, "Login failed found"
 
 
 class UserSchema(mm.SQLAlchemyAutoSchema):
@@ -100,7 +112,7 @@ class UserSchema(mm.SQLAlchemyAutoSchema):
         model = User
         alchemy_session = db.session
         load_instance = True
-        exclude = ['password']
+        exclude = ['password', 'class_identifier']
 
 
 def ip_validator(_ip):
@@ -150,6 +162,7 @@ third_set = []
 
 def init_db():
     db.create_all()
+
 
         # return render_template('index.html',
             #                        message='You have already submitted feedback')

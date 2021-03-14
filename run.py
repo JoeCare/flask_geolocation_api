@@ -4,7 +4,11 @@ from models import (db, app, conned_app, ip_validator, Geolocation,
 from flask import json, request, Response, jsonify, redirect
 import requests, os
 from connexion.resolver import RestyResolver
-
+#==========
+import time
+import six
+from werkzeug.exceptions import Unauthorized
+from jose import JWTError, jwt
 # app = settings.app
 # conned_app = settings.conned_app
 # conned_app.add_api("swagger.yml", resolver=RestyResolver('run'))
@@ -22,7 +26,7 @@ def create():
 		db.session.add(new_loc)
 		db.session.commit()
 		return jsonify(
-			201, f"Geolocation created for: {dict_data['ip']}", dict_data)
+			201, f"Geolocation created for: {new_loc.id}", dict_data)
 
 
 # @app.route('/localizations/input_ip=<input_ip>', methods=['POST'])
@@ -210,31 +214,88 @@ def remove_deleted(loc_id):
 		jsonify(404, f"Record not found in database for ID: {loc_id}")
 
 
-def register(login, password):
+def retrieve_all_users():
+	locations = User.query.all()
+	if locations:
+		return jsonify([loc.serialize() for loc in locations])
+	return jsonify(f"Records not found.")
+
+
+# AUTH
+#========================
+JWT_ISSUER = 'com.zalando.connexion'
+JWT_SECRET = 'change_this'
+JWT_LIFETIME_SECONDS = 600
+JWT_ALGORITHM = 'HS256'
+
+
+def generate_token(user_id):
+	timestamp = _current_timestamp()
+	payload = {
+		"iss": JWT_ISSUER,
+		"iat": int(timestamp),
+		"exp": int(timestamp + JWT_LIFETIME_SECONDS),
+		"sub": str(user_id),
+	}
+
+	return jwt.encode(payload, JWT_SECRET, algorithm=JWT_ALGORITHM)
+
+
+def decode_token(token):
+	try:
+		return jwt.decode(token, JWT_SECRET, algorithms=[JWT_ALGORITHM])
+	except JWTError as e:
+		six.raise_from(Unauthorized, e)
+
+
+def get_secret(user, token_info) -> str:
+	return '''
+	You are user_id {user} and the secret is 'wbevuec'.
+	Decoded token claims: {token_info}.
+	'''.format(user=user, token_info=token_info)
+
+
+def _current_timestamp() -> int:
+	return int(time.time())
+
+
+def register():
 	login = request.json.get("login", None)
 	password = request.json.get("password", None)
 	if len(password) < 8:
-		return jsonify({"msg": "Set password for at least 8 characters"}), 401
-	# else:
-		# if User.query.filter(User.login == login)
-		# User(login, password)
-	access_token = create_access_token(identity=login)
-	return jsonify(access_token=access_token)
+		return jsonify({"msg": "Please set password for at least 8"
+							   "characters"}), 401
+	else:
+		if User.query.filter(User.login == login):
+			return jsonify({"msg": "Given login already taken"})
+		else:
+			new_user = User(login, password)
+			db.session.add(new_user)
+			db.session.commit()
+			return generate_token(new_user.id)
+	# 	access_token = create_access_token(identity=login)
+	# return jsonify(access_token=access_token)
 
 
-def login(user_login, password):
+
+def login():
+
 	user_login = request.json.get("login", None)
 	password = request.json.get("password", None)
-	if len(password) < 8:
-		return jsonify({"msg": "Set password for at least 8 characters"}), 401
-	# else:
-		# if User.query.filter(User.login == login)
-		# User(login, password)
-	access_token = create_access_token(identity=user_login)
-	return jsonify(access_token=access_token)
+	if User.parse_on_login(User, _login=user_login, _password= password):
+		query = User.query.filter_by(login=user_login).one_or_none()
+		if query:
+			schema = GeolocationSchema()
+			data = schema.dump(query)
+			return generate_token(data['id'])
+	return jsonify({"msg": "Invalid credentials"}), 401
+	# access_token = create_access_token(identity=user_login)
+	# return jsonify(access_token=access_token)
 
 
 if __name__ == '__main__':
 	init_db()
-	conned_app.add_api("swagger.yml", resolver=RestyResolver('run'))
+	conned_app.add_api('openapi.yaml', resolver=RestyResolver('run'))
 	conned_app.run(host='127.0.0.1', port=5000, debug=True)
+	# conned_app.add_api("openapi.yaml", resolver=RestyResolver('run'))
+	# conned_app.run(host='127.0.0.1', port=5000, debug=True)

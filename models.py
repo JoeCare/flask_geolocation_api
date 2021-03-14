@@ -103,6 +103,45 @@ class User(db.Model):
                 return 401, "Invalid password"
         return 401, "Login failed found"
 
+    def retrieve_all_users():
+        locations = User.query.all()
+        if locations:
+            return jsonify([loc.serialize() for loc in locations])
+        return jsonify(f"Records not found.")
+
+    def register():
+        login = request.json.get("login", None)
+        password = request.json.get("password", None)
+        if len(password) < 8:
+            return jsonify({
+                               "msg": "Please set password for at least 8"
+                                      "characters"
+                               }), 401
+        else:
+            if User.query.filter(User.login == login):
+                return jsonify({"msg": "Given login already taken"})
+            else:
+                new_user = User(login, password)
+                db.session.add(new_user)
+                db.session.commit()
+                return generate_token(new_user.id)
+
+    # 	access_token = create_access_token(identity=login)
+    # return jsonify(access_token=access_token)
+
+    def login():
+        user_login = request.json.get("login", None)
+        password = request.json.get("password", None)
+        if User.parse_on_login(User, _login=user_login, _password=password):
+            query = User.query.filter_by(login=user_login).one_or_none()
+            if query:
+                schema = GeolocationSchema()
+                data = schema.dump(query)
+                return generate_token(data['id'])
+        return jsonify({"msg": "Invalid credentials"}), 401
+    # access_token = create_access_token(identity=user_login)
+    # return jsonify(access_token=access_token)
+
 
 class UserSchema(mm.SQLAlchemyAutoSchema):
     def __init__(self, **kwargs):

@@ -26,7 +26,7 @@ openapi-spec-validator= "*"
 jose = "*"
 six = "*"
 crypto = "*"
-python-jose = {extras = ["cryptography"], version = "*"}
+python-jose = {extras = ["cryptography"], version = "3.4"}
 python-dotenv = "*"
 setuptools = "*"
 httpie = "*"

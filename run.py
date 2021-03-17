@@ -11,6 +11,19 @@ from jose import JWTError, jwt
 load_dotenv(find_dotenv())
 
 
+def main_page():
+	response = {"Main endpoints":
+					{
+						"Geolocations": "/geolocations",
+						"Users": "/users",
+						"Login": "/auth/login",
+						"Swagger UI": "/ui",
+						"spec file": "/openapi.json",
+						}
+		}
+	return jsonify(response)
+
+
 def create():
 	"""
 	Create a new geolocation record from data object passed with request
@@ -224,10 +237,13 @@ JWT_ALGORITHM = os.getenv("JWT_ALGORITHM")
 
 def generate_token(public_id):
 	"""
-	Simple token generator taking returning encoded JWT
+	Simple token generator returning encoded JWT
 	:param public_id:	unique string user identification
 	:return 	JWT:	authorization token for given public_id
 	"""
+	# if User.query.filter_by(public_id=public_id).one_or_none() is None:
+	# 	return jsonify(404, "ID unverified")
+	# else:
 	timestamp = int(time.time())
 	payload = {
 		"iss": JWT_ISSUER,

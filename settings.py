@@ -11,17 +11,21 @@ app = conned_app.app
 # app = Flask('flask_geolocation_api')
 # app = Flask(__name__.split('.')[0])
 
-ENV = 'development'
+ENV = os.getenv('FLASK_ENV')
+if ENV:
+    print(ENV)
+else:
+    ENV = 'development'
 if ENV == 'development':
     app.config['ENV'] = 'development'
     app.debug = True
-    app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///' + os.path.join(
-        BASE_DIR, 'geo.db')
-    # app.config['SQLALCHEMY_DATABASE_URI'] = \
-    #     'postgresql://postgres:flapi@localhost'
+    # app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///' + os.path.join(
+    #     BASE_DIR, 'geo.db')
+    app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv('DATABASE_URL')
+
 else:
     app.debug = False
-    app.config['SQLALCHEMY_DATABASE_URI'] = ''
+    app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv('DATABASE_URL')
 
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['CSRF_ENABLED'] = True

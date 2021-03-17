@@ -11,6 +11,19 @@ from jose import JWTError, jwt
 load_dotenv(find_dotenv())
 
 
+def main_page():
+	response = {"Main endpoints":
+					{
+						"Geolocations": "/geolocations",
+						"Users": "/users",
+						"Login": "/auth/login",
+						"Swagger UI": "/ui",
+						"spec file": "/openapi.json",
+						}
+		}
+	return jsonify(response)
+
+
 def create():
 	"""
 	Create a new geolocation record from data object passed with request
@@ -38,7 +51,7 @@ def create_with_ip(input_ip):
 		if request.method == 'POST':
 			get_details = requests.get(
 				f'http://api.ipstack.com/{input_ip}?access_key'
-				f'={os.getenv("ipstackKey")}&output=json')
+				f'={os.getenv("IPSTACK_KEY")}&output=json')
 			if get_details.status_code == 200:
 				details = json.loads(get_details.content.decode())
 				third_set.append(details)
@@ -63,7 +76,7 @@ def create_with_domain(input_domain):
 	if request.method == 'POST':
 		get_details = requests.get(
 			f'http://api.ipstack.com/{input_domain}?access_key'
-			f'={os.getenv("ipstackKey")}&output=json')
+			f'={os.getenv("IPSTACK_KEY")}&output=json')
 		if get_details.status_code == 200:
 			details = json.loads(get_details.content.decode())
 			third_set.append(details)
@@ -224,10 +237,13 @@ JWT_ALGORITHM = os.getenv("JWT_ALGORITHM")
 
 def generate_token(public_id):
 	"""
-	Simple token generator taking returning encoded JWT
+	Simple token generator returning encoded JWT
 	:param public_id:	unique string user identification
 	:return 	JWT:	authorization token for given public_id
 	"""
+	# if User.query.filter_by(public_id=public_id).one_or_none() is None:
+	# 	return jsonify(404, "ID unverified")
+	# else:
 	timestamp = int(time.time())
 	payload = {
 		"iss": JWT_ISSUER,
@@ -389,4 +405,5 @@ def to_json():
 if __name__ == '__main__':
 	init_db()
 	conned_app.add_api('openapi.yaml', resolver=RestyResolver('run'))
-	conned_app.run(host='127.0.0.1', port=5000, debug=True)
+	# conned_app.run(host='127.0.0.1', port=5000, debug=True)
+	conned_app.run(debug=False)

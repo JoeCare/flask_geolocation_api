@@ -1,11 +1,20 @@
 openapi: 3.0.1
 info:
   title: Geolocation API DOCS
-  description: powered by OpenAPI3
+  description: documentation by OpenAPI3
   version: 1.0.0
 servers:
 - url: /
 paths:
+  /:
+    get:
+      summary: Default API view
+      description: Default
+      operationId: run.main_page
+      responses:
+        200:
+          description: Default
+          content: {}
   /geolocations:
     get:
       tags:
@@ -182,7 +191,7 @@ paths:
         200:
           description: Successful delete operation
           content: {}
-  /geolocations/{input_ip}:
+  /geolocations/input_ip={input_ip}:
     post:
       tags:
       - Geolocalizations
@@ -206,7 +215,7 @@ paths:
                 type: object
       security:
       - JWTokenAuth: ['secret']
-  /geolocations/{input_domain}:
+  /geolocations/input_domain={input_domain}:
     post:
       tags:
       - Geolocalizations

@@ -405,4 +405,5 @@ def to_json():
 if __name__ == '__main__':
 	init_db()
 	conned_app.add_api('openapi.yaml', resolver=RestyResolver('run'))
-	conned_app.run(host='127.0.0.1', port=5000, debug=True)
+	# conned_app.run(host='127.0.0.1', port=5000, debug=True)
+	conned_app.run(debug=False)

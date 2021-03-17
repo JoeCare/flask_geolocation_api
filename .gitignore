@@ -26,3 +26,4 @@ htmlcov/
 *,cover
 misc/
 /openapi/
+/app.ini

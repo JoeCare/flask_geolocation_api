@@ -51,7 +51,7 @@ def create_with_ip(input_ip):
 		if request.method == 'POST':
 			get_details = requests.get(
 				f'http://api.ipstack.com/{input_ip}?access_key'
-				f'={os.getenv("ipstackKey")}&output=json')
+				f'={os.getenv("IPSTACK_KEY")}&output=json')
 			if get_details.status_code == 200:
 				details = json.loads(get_details.content.decode())
 				third_set.append(details)
@@ -76,7 +76,7 @@ def create_with_domain(input_domain):
 	if request.method == 'POST':
 		get_details = requests.get(
 			f'http://api.ipstack.com/{input_domain}?access_key'
-			f'={os.getenv("ipstackKey")}&output=json')
+			f'={os.getenv("IPSTACK_KEY")}&output=json')
 		if get_details.status_code == 200:
 			details = json.loads(get_details.content.decode())
 			third_set.append(details)

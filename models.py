@@ -1,19 +1,15 @@
-from settings import app, conned_app, os, load_dotenv, find_dotenv
 from sqlalchemy import Column, Integer, Text, JSON, String
 from werkzeug.security import generate_password_hash as gpass
 from werkzeug.security import check_password_hash as chpass
-import ipaddress, uuid
-from flask_sqlalchemy import SQLAlchemy
-from flask_marshmallow import Marshmallow
-
-db = SQLAlchemy(app)
-mm = Marshmallow(app)
+import ipaddress, uuid, os, connexion
+from dotenv import load_dotenv, find_dotenv
+from run import db, mm
 
 load_dotenv(find_dotenv())
 
 
 class Geolocation(db.Model):
-    __tablename__= 'geolocation'
+    __tablename__ = 'geolocation'
     id = Column(Integer, primary_key=True, autoincrement=True,
                 nullable=True)
     input_data = Column(Text, nullable=True)
@@ -133,6 +129,7 @@ def ip_validator(_ip):
     except ValueError:
         return False
 
-#
+
 # def init_db():
 #     db.create_all()
+db.create_all()

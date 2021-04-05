@@ -1,14 +1,27 @@
-from models import (
-	db, app, conned_app, ip_validator, Geolocation, GeolocationSchema,
-	User, UserSchema, init_db, gpass, chpass,
-	load_dotenv, find_dotenv)
 from flask import json, request, jsonify, make_response
-import requests, os, time, six
+from flask_sqlalchemy import SQLAlchemy
+from flask_marshmallow import Marshmallow
+import requests, os, time, six, connexion
 from connexion.resolver import RestyResolver
 from werkzeug.exceptions import Unauthorized
 from jose import JWTError, jwt
+from models import (
+	ip_validator, Geolocation, GeolocationSchema,
+	User, UserSchema, gpass, chpass,
+	load_dotenv, find_dotenv)
 
 load_dotenv(find_dotenv())
+
+BASE_DIR = os.path.abspath(os.path.dirname(__file__))
+
+conned_app = connexion.FlaskApp(__name__, specification_dir=BASE_DIR)
+app = conned_app.app
+
+app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv('DATABASE_URI')
+app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+
+db = SQLAlchemy(app)
+mm = Marshmallow(app)
 
 
 def main_page():
@@ -54,7 +67,7 @@ def create_with_ip(input_ip):
 				f'={os.getenv("IPSTACK_KEY")}&output=json')
 			if get_details.status_code == 200:
 				details = json.loads(get_details.content.decode())
-				third_set.append(details)
+				# third_set.append(details)
 				new_loc = Geolocation(details, input_ip)
 				db.session.add(new_loc)
 				db.session.commit()
@@ -79,7 +92,7 @@ def create_with_domain(input_domain):
 			f'={os.getenv("IPSTACK_KEY")}&output=json')
 		if get_details.status_code == 200:
 			details = json.loads(get_details.content.decode())
-			third_set.append(details)
+			# third_set.append(details)
 			new_loc = Geolocation(details, input_domain)
 			db.session.add(new_loc)
 			db.session.commit()
@@ -391,8 +404,11 @@ def log_in():
 		else:
 			jsonify(401, "Wrong password.")
 	else:
-		return jsonify(404, "Login not found in database. Please check Your "
-							"input again or register.")
+		return jsonify(
+			404,
+			"Login not found in database. "
+			"Please check Your input again or register."
+			)
 
 
 # def to_json():
@@ -404,8 +420,7 @@ def log_in():
 
 if __name__ == '__main__':
 	# init_db()
-	db.create_all()
-	conned_app.add_api('openapi.yaml', resolver=RestyResolver('run'))
+	conned_app.add_api('openapi.yaml')  # , resolver=RestyResolver('run'))
 	# conned_app.run(host='127.0.0.1', port=5000, debug=True)
 	# port = int(os.environ.get('PORT', 5000))
 	# conned_app.run(host='0.0.0.0', port=port, debug=False)

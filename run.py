@@ -1,6 +1,6 @@
 from models import (
 	db, app, conned_app, ip_validator, Geolocation, GeolocationSchema,
-	User, UserSchema, init_db, third_set, fourth_set, gpass, chpass,
+	User, UserSchema, init_db, gpass, chpass,
 	load_dotenv, find_dotenv)
 from flask import json, request, jsonify, make_response
 import requests, os, time, six
@@ -352,7 +352,7 @@ def register():
 			new_user.last_name = last_name
 		if email:
 			new_user.email = email
-		fourth_set.append(new_user.serialize())
+		# fourth_set.append(new_user.serialize())
 		db.session.add(new_user)
 		db.session.commit()
 		new = User.query.filter_by(login=login).one()
@@ -395,15 +395,16 @@ def log_in():
 							"input again or register.")
 
 
-def to_json():
-	third_set.extend(fourth_set)
-	data_set = json.dumps(third_set)
-	with open('backup.json', 'a') as backup:
-		backup.write(third_set)
+# def to_json():
+# 	third_set.extend(fourth_set)
+# 	data_set = json.dumps(third_set)
+# 	with open('backup.json', 'a') as backup:
+# 		backup.write(third_set)
 
 
 if __name__ == '__main__':
-	init_db()
+	# init_db()
+	db.create_all()
 	conned_app.add_api('openapi.yaml', resolver=RestyResolver('run'))
 	# conned_app.run(host='127.0.0.1', port=5000, debug=True)
 	# port = int(os.environ.get('PORT', 5000))

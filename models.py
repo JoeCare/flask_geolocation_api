@@ -3,7 +3,7 @@ from werkzeug.security import generate_password_hash as gpass
 from werkzeug.security import check_password_hash as chpass
 import ipaddress, uuid, os, connexion
 from dotenv import load_dotenv, find_dotenv
-from run import db, mm
+from app import db, mm
 
 load_dotenv(find_dotenv())
 

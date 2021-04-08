@@ -19,14 +19,14 @@ psycopg2 = "*"
 psycopg2-binary = "*"
 gunicorn = "*"
 requests = "*"
-connexion = "*"
+connexion = {extras = ["swagger-ui"], version = "*"}
 swagger-ui-bundle = "*"
 openapi-schema-validator= "*"
 openapi-spec-validator= "*"
 jose = "*"
 six = "*"
 crypto = "*"
-python-jose = {extras = ["cryptography"], version = "3.4"}
+python-jose = {extras = ["cryptography"], version = "*"}
 python-dotenv = "*"
 setuptools = "*"
 httpie = "*"

@@ -3,8 +3,10 @@ info:
   title: Geolocation API DOCS
   description: documentation by OpenAPI3
   version: 1.0.0
+  license:
+    name: MIT
 servers:
-- url: /
+- url: /api/v1
 paths:
   /:
     get:

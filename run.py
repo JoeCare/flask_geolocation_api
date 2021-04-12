@@ -399,7 +399,6 @@ def log_in():
             "Please check Your input again or register."
             )
 
-
 # conned_app.add_url_rule()
 
 # def to_json():

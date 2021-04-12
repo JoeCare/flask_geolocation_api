@@ -4,7 +4,7 @@ info:
   description: documentation by OpenAPI3
   version: 1.0.0
 servers:
-- url: /
+- url: /api/v1/
 paths:
   /:
     get:

@@ -10,6 +10,7 @@ from models import (
     User, UserSchema, gpass, chpass,
     load_dotenv, find_dotenv)
 load_dotenv(find_dotenv())
+# from app import conned_app
 
 
 def main_page():
@@ -398,6 +399,7 @@ def log_in():
             "Please check Your input again or register."
             )
 
+# conned_app.add_url_rule()
 
 # def to_json():
 # 	third_set.extend(fourth_set)

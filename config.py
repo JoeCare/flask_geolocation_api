@@ -8,9 +8,9 @@ class Config(object):
     CSRF_ENABLED = False
     CSRF_SESSION_KEY = os.getenv('CSRF_SESSION_KEY')
     SECRET_KEY = os.getenv('SECRET_KEY')
-    SQLALCHEMY_DATABASE_URI = os.getenv('DATABASE_URL')
-    # SQLALCHEMY_DATABASE_URI = os.getenv('DATABASE_URL').replace(
-    #     "://", "ql://", 1)
+    # SQLALCHEMY_DATABASE_URI = os.getenv('DATABASE_URL')
+    SQLALCHEMY_DATABASE_URI = os.getenv('DATABASE_URL').replace(
+        "://", "ql://", 1)
     SQLALCHEMY_TRACK_MODIFICATIONS = False
 
 

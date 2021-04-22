@@ -14,22 +14,16 @@ class Config(object):
     SQLALCHEMY_TRACK_MODIFICATIONS = False
 
 
-class ProductionConfig(Config):
+class ProdConfig(Config):
     ENV = 'production'
     DEBUG = False
     CSRF_ENABLED = True
 
 
-class StagingConfig(Config):
-    DEVELOPMENT = False
-    DEBUG = False
-    CSRF_ENABLED = True
-
-
-class DevelopmentConfig(Config):
+class DevConfig(Config):
     DEVELOPMENT = True
     DEBUG = True
 
 
-class TestingConfig(Config):
+class TestConfig(Config):
     TESTING = True

@@ -1,1 +1,1 @@
-web: gunicorn app:conned_app -b $HOST:$PORT
+web: gunicorn wsgi:app -b $HOST:$PORT

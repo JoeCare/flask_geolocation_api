@@ -5,7 +5,7 @@ import requests, os, time, six, connexion
 from connexion.resolver import RestyResolver
 from werkzeug.exceptions import Unauthorized
 from jose import JWTError, jwt
-from models import (
+from app.models import (
     db, mm, ip_validator, Geolocation, GeolocationSchema,
     User, UserSchema, gpass, chpass,
     load_dotenv, find_dotenv)

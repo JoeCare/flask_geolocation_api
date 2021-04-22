@@ -1,14 +1,15 @@
-from settings import db, mm, app, conned_app, os, load_dotenv, find_dotenv
 from sqlalchemy import Column, Integer, Text, JSON, String
 from werkzeug.security import generate_password_hash as gpass
 from werkzeug.security import check_password_hash as chpass
 import ipaddress, uuid
+from dotenv import load_dotenv, find_dotenv
+from app import db, mm
 
 load_dotenv(find_dotenv())
 
 
 class Geolocation(db.Model):
-    __tablename__= 'geolocation'
+    __tablename__ = 'geolocation'
     id = Column(Integer, primary_key=True, autoincrement=True,
                 nullable=True)
     input_data = Column(Text, nullable=True)
@@ -129,42 +130,6 @@ def ip_validator(_ip):
         return False
 
 
-test_set = ['160.39.144.19',
-            '208.113.217.212',
-            '134.201.250.155',
-            '110.174.165.78',
-            '72.229.28.185',
-            '250.10.247.40',
-            '58.146.87.212',
-            '0.242.187.128',
-            '189.147.147.15',
-            '50.152.25.31',
-            '74.135.229.139',
-            '223.180.89.79',
-            '149.154.86.1',
-            '76.0.198.12',
-            '179.111.92.213',
-            '251.219.146.9',
-            '146.150.225.180',
-            '43.30.40.132',
-            '88.230.139.194',
-            '219.143.81.80'
-            ]
-second_set = [
-    "241.28.103.93",
-    "161.47.118.200",
-    "73.98.2.50",
-    "220.0.28.104",
-    "39.165.71.101",
-    "164.189.52.190",
-    "206.80.10.154",
-    "3.131.56.210",
-    "155.22.16.173",
-    "32.1.213.113",
-    ]
-third_set = []
-fourth_set = []
-
-
-def init_db():
-    db.create_all()
+# def init_db():
+#     db.create_all()
+# db.create_all()
